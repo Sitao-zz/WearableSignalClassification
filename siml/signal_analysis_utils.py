@@ -4,9 +4,9 @@ from scipy.signal import welch
 from scipy.fftpack import fft
 from scipy import signal
 
+
 def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
                  kpsh=False, valley=False, show=False, ax=None):
-
     """Detect peaks in data based on their amplitude and other features.
 
     Parameters
@@ -105,18 +105,18 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
     # handle NaN's
     if ind.size and indnan.size:
         # NaN's and values close to NaN's cannot be peaks
-        ind = ind[np.in1d(ind, np.unique(np.hstack((indnan, indnan-1, indnan+1))), invert=True)]
+        ind = ind[np.in1d(ind, np.unique(np.hstack((indnan, indnan - 1, indnan + 1))), invert=True)]
     # first and last values of x cannot be peaks
     if ind.size and ind[0] == 0:
         ind = ind[1:]
-    if ind.size and ind[-1] == x.size-1:
+    if ind.size and ind[-1] == x.size - 1:
         ind = ind[:-1]
     # remove peaks < minimum peak height
     if ind.size and mph is not None:
         ind = ind[x[ind] >= mph]
     # remove peaks - neighbors < threshold
     if ind.size and threshold > 0:
-        dx = np.min(np.vstack([x[ind]-x[ind-1], x[ind]-x[ind+1]]), axis=0)
+        dx = np.min(np.vstack([x[ind] - x[ind - 1], x[ind] - x[ind + 1]]), axis=0)
         ind = np.delete(ind, np.where(dx < threshold)[0])
     # detect small peaks closer than minimum peak distance
     if ind.size and mpd > 1:
@@ -126,7 +126,7 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
             if not idel[i]:
                 # keep peaks with the same height if kpsh is True
                 idel = idel | (ind >= ind[i] - mpd) & (ind <= ind[i] + mpd) \
-                    & (x[ind[i]] > x[ind] if kpsh else True)
+                       & (x[ind[i]] > x[ind] if kpsh else True)
                 idel[i] = 0  # Keep current peak
         # remove the small peaks and sort back the indices by their occurrence
         ind = np.sort(ind[~idel])
@@ -139,44 +139,52 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
         _plot(x, mph, mpd, threshold, edge, valley, ax, ind)
 
     return ind
-	
+
+
 def get_values(y_values, T, N, f_s):
     y_values = y_values
-    x_values = [(1/f_s) * kk for kk in range(0,len(y_values))]
+    x_values = [(1 / f_s) * kk for kk in range(0, len(y_values))]
     return x_values, y_values
 
+
 def get_fft_values(y_values, T, N, f_s):
-    f_values = np.linspace(0.0, 1.0/(2.0*T), N//2)
+    f_values = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
     fft_values_ = fft(y_values)
-    fft_values = 2.0/N * np.abs(fft_values_[0:N//2])
+    fft_values = 2.0 / N * np.abs(fft_values_[0:N // 2])
     return f_values, fft_values
+
 
 def get_psd_values(y_values, T, N, f_s):
     f_values, psd_values = welch(y_values, fs=f_s)
     return f_values, psd_values
 
+
 def autocorr(x):
     result = np.correlate(x, x, mode='full')
-    return result[len(result)//2:]
- 
+    return result[len(result) // 2:]
+
+
 def get_autocorr_values(y_values, T, N, f_s):
     autocorr_values = autocorr(y_values)
     x_values = np.array([T * jj for jj in range(0, N)])
     return x_values, autocorr_values
-    
-def get_first_n_peaks(x,y,no_peaks=5):
+
+
+def get_first_n_peaks(x, y, no_peaks=5):
     x_, y_ = list(x), list(y)
     if len(x_) >= no_peaks:
         return x_[:no_peaks], y_[:no_peaks]
     else:
-        missing_no_peaks = no_peaks-len(x_)
-        return x_ + [0]*missing_no_peaks, y_ + [0]*missing_no_peaks
-    
+        missing_no_peaks = no_peaks - len(x_)
+        return x_ + [0] * missing_no_peaks, y_ + [0] * missing_no_peaks
+
+
 def get_features(x_values, y_values, mph):
     indices_peaks = detect_peaks(y_values, mph=mph)
     peaks_x, peaks_y = get_first_n_peaks(x_values[indices_peaks], y_values[indices_peaks])
     return peaks_x + peaks_y
- 
+
+
 def extract_features_labels(dataset, labels, T, N, f_s, denominator):
     percentile = 5
     list_of_features = []
@@ -184,14 +192,14 @@ def extract_features_labels(dataset, labels, T, N, f_s, denominator):
     for signal_no in range(0, len(dataset)):
         features = []
         list_of_labels.append(labels[signal_no])
-        for signal_comp in range(0,dataset.shape[2]):
+        for signal_comp in range(0, dataset.shape[2]):
             signal = dataset[signal_no, :, signal_comp]
-            
+
             signal_min = np.nanpercentile(signal, percentile)
-            signal_max = np.nanpercentile(signal, 100-percentile)
-            #ijk = (100 - 2*percentile)/10
-            mph = signal_min + (signal_max - signal_min)/denominator
-            
+            signal_max = np.nanpercentile(signal, 100 - percentile)
+            # ijk = (100 - 2*percentile)/10
+            mph = signal_min + (signal_max - signal_min) / denominator
+
             features += get_features(*get_psd_values(signal, T, N, f_s), mph)
             features += get_features(*get_fft_values(signal, T, N, f_s), mph)
             features += get_features(*get_autocorr_values(signal, T, N, f_s), mph)
