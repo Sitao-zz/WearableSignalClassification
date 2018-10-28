@@ -1,6 +1,6 @@
 from collections import Counter, defaultdict
-from evaluators import *
-import load_data as ld
+from siml.evaluators import *
+import siml.load_data as ld
 import numpy as np
 
 

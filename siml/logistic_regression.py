@@ -1,6 +1,6 @@
 import numpy as np
-import load_data as ld
-from evaluators import *
+import siml.load_data as ld
+from siml.evaluators import *
 
 
 class LogisticRegression():
