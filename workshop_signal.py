@@ -10,8 +10,11 @@ from collections import Counter
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
+import warnings
+
 # # 0. Loading the signals from file
 
+warnings.simplefilter("ignore")
 
 activities_description = {
     1: 'walking',
